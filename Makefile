@@ -1,6 +1,7 @@
 CXX = g++
-CXXFLAGS = -I E:/SDL/x86_64-w64-mingw32/include
-LDFLAGS = -L E:/SDL/x86_64-w64-mingw32/lib -lSDL3 -mwindows
+CXXFLAGS = -I SDL/include
+LDFLAGS = -L SDL/lib -lSDL3 -lSDL3_image -lSDL3_ttf -mwindows
+
 
 SRC = $(wildcard src/*.cpp)
 OUT = main.exe
