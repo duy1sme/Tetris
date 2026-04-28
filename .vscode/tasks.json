@@ -1,0 +1,19 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build with Makefile",
+            "type": "shell",
+            "command": "C:/msys64/ucrt64/bin/mingw32-make.exe",
+            "args": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "detail": "Biên dịch dự án sử dụng Makefile"
+        }
+    ]
+}
