@@ -11,12 +11,12 @@ constexpr int BOARD_HEIGHT = 20;
 constexpr int CELL_SIZE = 32;
 
 // Vị trí board trên màn hình (offset từ góc trái trên)
-constexpr int BOARD_OFFSET_X = 200;
-constexpr int BOARD_OFFSET_Y = 40;
+constexpr int BOARD_OFFSET_X = 326;
+constexpr int BOARD_OFFSET_Y = 41;
 
 // Kích thước cửa sổ
-constexpr int WINDOW_WIDTH  = 640;
-constexpr int WINDOW_HEIGHT = 720;
+constexpr int WINDOW_WIDTH  = 967;
+constexpr int WINDOW_HEIGHT = 727;
 /*constexpr thay vì #define — an toàn hơn, có kiểu dữ liệu rõ ràng, compiler kiểm tra được.*/
 
 // ENUM GAMESTATE

@@ -5,6 +5,8 @@
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 #include <SDL3_ttf/SDL_ttf.h>
+#include <string>
+#include <vector>
 
 // Forward declaration — tránh circular include
 class Board;
@@ -13,12 +15,19 @@ class Tetromino;
 class Renderer {
 private:
   SDL_Renderer *sdlRenderer;
-  SDL_Texture *bgTexture;
+  SDL_Texture *mainMenuTexture;
+  SDL_Texture *gameScreenTexture;
+  SDL_Texture *highScoreTexture;
   SDL_Texture *blockTexture;
   TTF_Font *font;
 
+  std::vector<int> highscores;
+  bool highscoresLoaded;
+  void loadHighscores();
+
   // Hàm tiện ích nội bộ
   void renderText(const char *text, int x, int y, SDL_Color color);
+  void renderTextCentered(const char *text, int cx, int cy, SDL_Color color);
   SDL_Color getTetrominoColor(TetrominoType type);
 
 public:
@@ -49,7 +58,7 @@ public:
   void drawUI(int score, int level, int lines);
 
   // Vẽ màn hình theo state hiện tại
-  void drawScreen(GameState state);
+  void drawScreen(GameState state, int currentScore = 0, int currentLevel = 0, int currentLines = 0);
   /*Nhận vào GameState — tự biết vẽ màn hình nào
   MENU → vẽ main menu
   PAUSED → vẽ overlay pause

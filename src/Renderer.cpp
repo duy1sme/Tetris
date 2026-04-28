@@ -1,14 +1,18 @@
 #include "Renderer.h"
 #include "Board.h"
 #include "Tetromino.h"
+#include <algorithm>
 #include <cstdio>
+#include <fstream>
 #include <iostream>
+#include <string>
 
 // Constructor: Khởi tạo renderer và tải các tài nguyên cần thiết (Texture,
 // Font)
 Renderer::Renderer(SDL_Renderer *renderer)
-    : sdlRenderer(renderer), bgTexture(nullptr), blockTexture(nullptr),
-      font(nullptr) {
+    : sdlRenderer(renderer), mainMenuTexture(nullptr),
+      gameScreenTexture(nullptr), highScoreTexture(nullptr),
+      blockTexture(nullptr), font(nullptr), highscoresLoaded(false) {
 
   // Khởi tạo thư viện SDL3_ttf nếu chưa được khởi tạo trước đó
   if (!TTF_WasInit()) {
@@ -17,10 +21,22 @@ Renderer::Renderer(SDL_Renderer *renderer)
     }
   }
 
-  // Tải hình nền từ file ảnh bằng SDL3_image
-  bgTexture = IMG_LoadTexture(sdlRenderer, "assets/bg.png");
-  if (!bgTexture) {
-    std::cerr << "Failed to load bg.png: " << SDL_GetError() << std::endl;
+  mainMenuTexture = IMG_LoadTexture(sdlRenderer, "assets/main_menu.png");
+  if (!mainMenuTexture) {
+    std::cerr << "Failed to load main_menu.png: " << SDL_GetError()
+              << std::endl;
+  }
+
+  gameScreenTexture = IMG_LoadTexture(sdlRenderer, "assets/gamescreen.png");
+  if (!gameScreenTexture) {
+    std::cerr << "Failed to load gamescreen.png: " << SDL_GetError()
+              << std::endl;
+  }
+
+  highScoreTexture = IMG_LoadTexture(sdlRenderer, "assets/highscore.png");
+  if (!highScoreTexture) {
+    std::cerr << "Failed to load highscore.png: " << SDL_GetError()
+              << std::endl;
   }
 
   // Tải hình ảnh của một khối block cơ bản (thường là ảnh grayscale để dễ phủ
@@ -39,8 +55,12 @@ Renderer::Renderer(SDL_Renderer *renderer)
 }
 
 Renderer::~Renderer() {
-  if (bgTexture)
-    SDL_DestroyTexture(bgTexture);
+  if (mainMenuTexture)
+    SDL_DestroyTexture(mainMenuTexture);
+  if (gameScreenTexture)
+    SDL_DestroyTexture(gameScreenTexture);
+  if (highScoreTexture)
+    SDL_DestroyTexture(highScoreTexture);
   if (blockTexture)
     SDL_DestroyTexture(blockTexture);
   if (font)
@@ -81,17 +101,17 @@ SDL_Color Renderer::getTetrominoColor(TetrominoType type) {
 // Vẽ toàn bộ bảng chơi, bao gồm hình nền, viền và các khối đã bị khóa (locked)
 void Renderer::drawBoard(const Board &board) {
   // 1. Vẽ background phủ toàn màn hình nếu đã load thành công
-  if (bgTexture) {
+  if (gameScreenTexture) {
     SDL_FRect dest = {0, 0, (float)WINDOW_WIDTH, (float)WINDOW_HEIGHT};
-    SDL_RenderTexture(sdlRenderer, bgTexture, nullptr, &dest);
+    SDL_RenderTexture(sdlRenderer, gameScreenTexture, nullptr, &dest);
   }
 
-  // 2. Vẽ viền bảng chơi (board) màu trắng
-  SDL_SetRenderDrawColor(sdlRenderer, 255, 255, 255, 255);
-  SDL_FRect boardRect = {(float)BOARD_OFFSET_X, (float)BOARD_OFFSET_Y,
-                         (float)(BOARD_WIDTH * CELL_SIZE),
-                         (float)(BOARD_HEIGHT * CELL_SIZE)};
-  SDL_RenderRect(sdlRenderer, &boardRect);
+  // 2. Vẽ viền bảng chơi (board) màu trắng (Đã xóa vì ảnh nền đã có viền)
+  // SDL_SetRenderDrawColor(sdlRenderer, 255, 255, 255, 255);
+  // SDL_FRect boardRect = {(float)BOARD_OFFSET_X, (float)BOARD_OFFSET_Y,
+  //                        (float)(BOARD_WIDTH * CELL_SIZE),
+  //                        (float)(BOARD_HEIGHT * CELL_SIZE)};
+  // SDL_RenderRect(sdlRenderer, &boardRect);
 
   // 3. Duyệt qua từng ô trên bảng chơi để vẽ các khối đã nằm cố định
   for (int r = 0; r < BOARD_HEIGHT; ++r) {
@@ -206,10 +226,8 @@ void Renderer::drawGhostPiece(const Tetromino &tetromino, int ghostY) {
 }
 
 void Renderer::drawNextPiece(const Tetromino &nextPiece) {
-  int panelX = BOARD_OFFSET_X + BOARD_WIDTH * CELL_SIZE + 50;
-  int panelY = BOARD_OFFSET_Y + 100;
-
-  renderText("Next:", panelX, panelY - 40, {255, 255, 255, 255});
+  int panelX = 730;
+  int panelY = 183;
 
   TetrominoType type = nextPiece.getType();
   if (type == TetrominoType::NONE)
@@ -239,66 +257,141 @@ void Renderer::drawNextPiece(const Tetromino &nextPiece) {
   }
 }
 
-// Hàm tiện ích để vẽ một đoạn văn bản lên màn hình tại tọa độ (x,y)
 void Renderer::renderText(const char *text, int x, int y, SDL_Color color) {
   if (!font)
     return;
 
-  // Bước 1: Dùng SDL3_ttf render chữ ra bề mặt (Surface).
-  // Tham số độ dài (length) truyền vào là 0 để hàm tự động đọc tới ký tự null
-  // (\0).
   SDL_Surface *surface = TTF_RenderText_Solid(font, text, 0, color);
   if (surface) {
-    // Bước 2: Chuyển đổi SDL_Surface thành SDL_Texture để GPU có thể vẽ nhanh
-    // chóng
     SDL_Texture *texture = SDL_CreateTextureFromSurface(sdlRenderer, surface);
     if (texture) {
-      // Bước 3: Định dạng khung hình (chiều rộng và chiều cao khớp với kích
-      // thước chữ)
       SDL_FRect destRect = {(float)x, (float)y, (float)surface->w,
                             (float)surface->h};
       SDL_RenderTexture(sdlRenderer, texture, nullptr, &destRect);
-      SDL_DestroyTexture(texture); // Giải phóng Texture sau khi vẽ xong
+      SDL_DestroyTexture(texture);
     }
-    SDL_DestroySurface(surface); // Giải phóng Surface
+    SDL_DestroySurface(surface);
+  }
+}
+
+void Renderer::renderTextCentered(const char *text, int cx, int cy,
+                                  SDL_Color color) {
+  if (!font)
+    return;
+
+  SDL_Surface *surface = TTF_RenderText_Solid(font, text, 0, color);
+  if (surface) {
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(sdlRenderer, surface);
+    if (texture) {
+      SDL_FRect destRect = {(float)(cx - surface->w / 2),
+                            (float)(cy - surface->h / 2), (float)surface->w,
+                            (float)surface->h};
+      SDL_RenderTexture(sdlRenderer, texture, nullptr, &destRect);
+      SDL_DestroyTexture(texture);
+    }
+    SDL_DestroySurface(surface);
   }
 }
 
 void Renderer::drawUI(int score, int level, int lines) {
-  int panelX = BOARD_OFFSET_X - 150;
-  int panelY = BOARD_OFFSET_Y + 100;
+  int panelX = 177; // Center of the left boxes
 
   char buffer[64];
 
-  snprintf(buffer, sizeof(buffer), "Score: %d", score);
-  renderText(buffer, panelX, panelY, {255, 255, 255, 255});
+  snprintf(buffer, sizeof(buffer), "%d", score);
+  renderTextCentered(buffer, panelX, 473, {255, 255, 255, 255});
 
-  snprintf(buffer, sizeof(buffer), "Level: %d", level);
-  renderText(buffer, panelX, panelY + 50, {255, 255, 255, 255});
+  snprintf(buffer, sizeof(buffer), "%d", level);
+  renderTextCentered(buffer, panelX, 545, {255, 255, 255, 255});
 
-  snprintf(buffer, sizeof(buffer), "Lines: %d", lines);
-  renderText(buffer, panelX, panelY + 100, {255, 255, 255, 255});
+  snprintf(buffer, sizeof(buffer), "%d", lines);
+  renderTextCentered(buffer, panelX, 617, {255, 255, 255, 255});
 }
 
-void Renderer::drawScreen(GameState state) {
+void Renderer::loadHighscores() {
+  highscores.clear();
+  std::ifstream file("highscores.txt");
+  int score;
+  while (file >> score) {
+    highscores.push_back(score);
+  }
+  std::sort(highscores.rbegin(), highscores.rend());
+  if (highscores.size() > 5) {
+    highscores.resize(5);
+  }
+}
+
+void Renderer::drawScreen(GameState state, int currentScore, int currentLevel,
+                          int currentLines) {
+  SDL_FRect fullScreenDest = {0, 0, (float)WINDOW_WIDTH, (float)WINDOW_HEIGHT};
+
   switch (state) {
   case GameState::MENU:
-    renderText("TETRIS", WINDOW_WIDTH / 2 - 50, WINDOW_HEIGHT / 2 - 50,
-               {255, 255, 0, 255});
-    renderText("Press ENTER to Start", WINDOW_WIDTH / 2 - 100,
-               WINDOW_HEIGHT / 2 + 50, {255, 255, 255, 255});
+    highscoresLoaded = false;
+    if (mainMenuTexture) {
+      SDL_RenderTexture(sdlRenderer, mainMenuTexture, nullptr, &fullScreenDest);
+    }
+    // Chữ có thể bỏ đi vì ảnh đã vẽ rồi, hoặc nếu muốn thì bật lên
+    // renderText("Press ENTER to Start", WINDOW_WIDTH / 2 - 100, WINDOW_HEIGHT
+    // / 2 + 50, {255, 255, 255, 255});
     break;
   case GameState::PAUSED:
+    highscoresLoaded = false;
     renderText("PAUSED", WINDOW_WIDTH / 2 - 50, WINDOW_HEIGHT / 2,
                {255, 255, 255, 255});
     break;
-  case GameState::GAME_OVER:
-    renderText("GAME OVER", WINDOW_WIDTH / 2 - 80, WINDOW_HEIGHT / 2 - 50,
-               {255, 0, 0, 255});
-    renderText("Press ENTER to Restart", WINDOW_WIDTH / 2 - 120,
-               WINDOW_HEIGHT / 2 + 50, {255, 255, 255, 255});
+  case GameState::GAME_OVER: {
+    if (!highscoresLoaded) {
+      loadHighscores();
+      highscores.push_back(currentScore);
+      std::sort(highscores.rbegin(), highscores.rend());
+      if (highscores.size() > 5) {
+        highscores.resize(5);
+      }
+
+      std::ofstream file("highscores.txt");
+      for (int s : highscores) {
+        file << s << "\n";
+      }
+
+      highscoresLoaded = true;
+    }
+    if (highScoreTexture) {
+      SDL_FRect popupDest = {(float)(WINDOW_WIDTH / 2 - 210),
+                             (float)(WINDOW_HEIGHT / 2 - 200), 420.0f, 400.0f};
+      SDL_RenderTexture(sdlRenderer, highScoreTexture, nullptr, &popupDest);
+    }
+
+    // Tọa độ gốc của popup
+    int popupX = WINDOW_WIDTH / 2 - 210;
+    int popupY = WINDOW_HEIGHT / 2 - 200;
+
+    // Vẽ Highscore History (Bảng vàng)
+    if (highscores.empty()) {
+      renderTextCentered("No scores yet!", popupX + 210, popupY + 180,
+                         {200, 200, 200, 255});
+    } else {
+      bool highlighted = false;
+      for (size_t i = 0; i < highscores.size(); ++i) {
+        SDL_Color color = {255, 255, 255, 255};
+        if (!highlighted && highscores[i] == currentScore) {
+          color = {255, 255, 0, 255}; // Highlight yellow
+          highlighted = true;
+        }
+        std::string scoreStr = std::to_string(highscores[i]);
+        // Box starts at 88, but top margin is ~12px. Rows start at ~100.
+        // Row height is ~35px. First row center Y = 100 + 35/2 = 117.5
+        renderTextCentered(scoreStr.c_str(), popupX + 210,
+                           popupY + 134 + i * 29, color);
+      }
+    }
+
+    renderText("Press ENTER to Restart", WINDOW_WIDTH / 2 - 140,
+               WINDOW_HEIGHT / 2 + 220, {255, 255, 255, 255});
     break;
+  }
   default:
+    highscoresLoaded = false;
     break;
   }
 }
