@@ -51,6 +51,12 @@ public:
     static Tetromino createRandom();
     /*static nghĩa là gọi không cần object: Tetromino::createRandom(). 
     TV1 sẽ implement thuật toán bag randomizer — đảm bảo 7 mảnh xuất hiện đều nhau.*/
+
+    int getColorID() const;
+    int getBlockX(int index) const;
+    int getBlockY(int index) const;
+
+    void moveUp();  // cần để undo moveDown khi va chạm
 };
 
 #endif

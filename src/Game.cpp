@@ -79,86 +79,86 @@ Game::~Game() {
 }
 
 void Game::handleInput() {
-  SDL_Event event;
-  while (SDL_PollEvent(&event)) {
-    if (event.type == SDL_EVENT_QUIT) {
-      running = false;
-    } else if (event.type == SDL_EVENT_KEY_DOWN) {
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
 
-      if (event.key.key == SDLK_ESCAPE) {
-        if (state == GameState::PLAYING)
-          changeState(GameState::PAUSED);
-        else if (state == GameState::PAUSED)
-          changeState(GameState::PLAYING);
-      }
-
-      if (state == GameState::MENU && event.key.key == SDLK_RETURN) {
-        board.reset();
-        score = 0;
-        level = 1;
-        totalLines = 0;
-        fallInterval = 1.0f;
-        delete currentPiece;
-        currentPiece = nullptr;
-        delete nextPiece;
-        nextPiece = nullptr;
-        spawnPiece();
-        changeState(GameState::PLAYING);
-      } else if (state == GameState::GAME_OVER &&
-                 event.key.key == SDLK_RETURN) {
-        changeState(GameState::MENU);
-      }
-
-      if (state != GameState::PLAYING)
-        continue;
-      if (currentPiece == nullptr)
-        continue;
-
-      switch (event.key.key) {
-      case SDLK_LEFT:
-        currentPiece->moveLeft();
-        if (!isValidPosition(*currentPiece))
-          currentPiece->moveRight();
-        break;
-      case SDLK_RIGHT:
-        currentPiece->moveRight();
-        if (!isValidPosition(*currentPiece))
-          currentPiece->moveLeft();
-        break;
-      case SDLK_DOWN:
-        currentPiece->moveDown();
-        if (!isValidPosition(*currentPiece)) {
-          currentPiece->y -= 1;
-          lockCurrentPiece();
-        } else {
-          score += 1; // Soft drop points
+        if (event.type == SDL_EVENT_QUIT) {
+            running = false;
         }
-        break;
-      case SDLK_UP:
-      case SDLK_X:
-        currentPiece->rotateCW();
-        if (!isValidPosition(*currentPiece))
-          currentPiece->rotateCCW();
-        break;
-      case SDLK_Z:
-        currentPiece->rotateCCW();
-        if (!isValidPosition(*currentPiece))
-          currentPiece->rotateCW();
-        break;
-      case SDLK_SPACE:
-        while (isValidPosition(*currentPiece)) {
-          currentPiece->moveDown();
-          score += 2;
+
+        // ── MENU ──────────────────────────────────
+        if (state == GameState::MENU) {
+            if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
+                int mx = (int)event.button.x;
+                int my = (int)event.button.y;
+
+                if (isMouseInRect(mx, my, btnPlay)) {
+                    spawnPiece();
+                    changeState(GameState::PLAYING);
+                }
+                // settings, help xử lý sau
+            }
         }
-        currentPiece->y -= 1;
-        score -= 2;
-        lockCurrentPiece();
-        break;
-      }
+
+        // ── PLAYING ───────────────────────────────
+        else if (state == GameState::PLAYING) {
+            if (event.type == SDL_EVENT_KEY_DOWN) {
+                switch (event.key.scancode) {
+                    case SDL_SCANCODE_LEFT:
+                        currentPiece->moveLeft();
+                        if (!isValidPosition(*currentPiece)) currentPiece->moveRight();
+                        break;
+                    case SDL_SCANCODE_RIGHT:
+                        currentPiece->moveRight();
+                        if (!isValidPosition(*currentPiece)) currentPiece->moveLeft();
+                        break;
+                    case SDL_SCANCODE_DOWN:
+                        currentPiece->moveDown();
+                        if (!isValidPosition(*currentPiece)) currentPiece->moveUp();
+                        break;
+                    case SDL_SCANCODE_UP:
+                    case SDL_SCANCODE_X:
+                        currentPiece->rotateCW();
+                        if (!isValidPosition(*currentPiece)) currentPiece->rotateCCW();
+                        break;
+                    case SDL_SCANCODE_Z:
+                        currentPiece->rotateCCW();
+                        if (!isValidPosition(*currentPiece)) currentPiece->rotateCW();
+                        break;
+                    case SDL_SCANCODE_SPACE:
+                        hardDrop();
+                        break;
+                    case SDL_SCANCODE_P:
+                    case SDL_SCANCODE_ESCAPE:
+                        changeState(GameState::PAUSED);
+                        break;
+                }
+            }
+        }
+
+        // ── PAUSED ────────────────────────────────
+        else if (state == GameState::PAUSED) {
+            if (event.type == SDL_EVENT_KEY_DOWN) {
+                if (event.key.scancode == SDL_SCANCODE_P ||
+                    event.key.scancode == SDL_SCANCODE_ESCAPE) {
+                    changeState(GameState::PLAYING);
+                }
+            }
+        }
+
+        // ── GAME OVER ─────────────────────────────
+        else if (state == GameState::GAME_OVER) {
+            if (event.type == SDL_EVENT_KEY_DOWN) {
+                if (event.key.scancode == SDL_SCANCODE_RETURN) {
+                    board.reset();
+                    score = 0; level = 1; totalLines = 0;
+                    spawnPiece();
+                    changeState(GameState::PLAYING);
+                }
+            }
+        }
     }
-  }
 }
-
 void Game::update(float deltaTime) {
   if (state != GameState::PLAYING)
     return;
@@ -200,17 +200,13 @@ void Game::render() {
 }
 
 void Game::spawnPiece() {
-  if (nextPiece == nullptr) {
-    nextPiece = new Tetromino(Tetromino::createRandom());
-  }
+    delete currentPiece;
+    currentPiece = nextPiece ? nextPiece : new Tetromino(Tetromino::createRandom());
+    nextPiece    = new Tetromino(Tetromino::createRandom());
 
-  delete currentPiece;
-  currentPiece = nextPiece;
-  nextPiece = new Tetromino(Tetromino::createRandom());
-
-  if (!isValidPosition(*currentPiece)) {
-    changeState(GameState::GAME_OVER);
-  }
+    if (!isValidPosition(*currentPiece)) {
+        changeState(GameState::GAME_OVER);
+    }
 }
 
 bool Game::isValidPosition(const Tetromino &piece) const {
@@ -269,3 +265,17 @@ void Game::calculateScore(int linesCleared) {
 }
 
 void Game::changeState(GameState newState) { state = newState; }
+
+bool Game::isMouseInRect(int mouseX, int mouseY, SDL_FRect rect) {
+    return mouseX >= rect.x && mouseX <= rect.x + rect.w
+        && mouseY >= rect.y && mouseY <= rect.y + rect.h;
+}
+
+void Game::hardDrop() {
+    while (isValidPosition(*currentPiece)) {
+        currentPiece->moveDown();
+    }
+    currentPiece->moveUp();
+    lockCurrentPiece();
+}
+

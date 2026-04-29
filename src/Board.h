@@ -34,5 +34,8 @@ class Board
 
         // Kiểm tra game over (có ô nào bị lấp ở hàng trên cùng không)
         bool isGameOver() const;
+
+        int  getCellColorID(int col, int row) const;
+        bool isValidPosition(const class Tetromino& piece, int toX, int toY) const; 
 };
 #endif

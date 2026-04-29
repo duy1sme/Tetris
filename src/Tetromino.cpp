@@ -283,3 +283,31 @@ Tetromino Tetromino::createRandom() {
 
     return Tetromino(nextType);
 }
+
+int Tetromino::getColorID() const {
+    return (int)type;
+}
+
+int Tetromino::getBlockX(int index) const {
+    int count = 0;
+    for (int row = 0; row < TETROMINO_SIZE; ++row)
+        for (int col = 0; col < TETROMINO_SIZE; ++col)
+            if (shape[rotation][row][col]) {
+                if (count == index) return col;
+                ++count;
+            }
+    return 0;
+}
+
+int Tetromino::getBlockY(int index) const {
+    int count = 0;
+    for (int row = 0; row < TETROMINO_SIZE; ++row)
+        for (int col = 0; col < TETROMINO_SIZE; ++col)
+            if (shape[rotation][row][col]) {
+                if (count == index) return row;
+                ++count;
+            }
+    return 0;
+}
+
+void Tetromino::moveUp() { --y; }

@@ -61,7 +61,15 @@ private:
   // Timer để điều khiển tốc độ rơi
   float fallTimer;    // đếm thời gian từ lần rơi cuối
   float fallInterval; // khoảng cách giữa mỗi lần rơi (giây)
+  
+  // Vùng nhấn của từng nút (x, y, width, height)
+  SDL_FRect btnPlay     = {370, 305, 230, 55};
+  SDL_FRect btnSettings = {350, 650, 60, 60};
+  SDL_FRect btnHelp     = {435, 650, 60, 60};
 
+  bool isMouseInRect(int mouseX, int mouseY, SDL_FRect rect);
+
+  void hardDrop();
 public:
   Game();
   ~Game();

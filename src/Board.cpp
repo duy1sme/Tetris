@@ -137,3 +137,25 @@ bool Board::isGameOver() const {
 
     return false;
 }
+
+int Board::getCellColorID(int col, int row) const {
+    return (int)getCellType(col, row);
+}
+
+bool Board::isValidPosition(const Tetromino& piece, int toX, int toY) const {
+    for (int row = 0; row < TETROMINO_SIZE; ++row) {
+        for (int col = 0; col < TETROMINO_SIZE; ++col) {
+            if (!piece.isCellFilled(col, row)) continue;
+
+            int boardCol = toX + col;
+            int boardRow = toY + row;
+
+            if (boardCol < 0 || boardCol >= BOARD_WIDTH || boardRow >= BOARD_HEIGHT)
+                return false;
+
+            if (boardRow >= 0 && !isCellEmpty(boardCol, boardRow))
+                return false;
+        }
+    }
+    return true;
+}
