@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-// Forward declaration — tránh circular include
+// Khai bao truoc de tranh include vong.
 class Board;
 class Tetromino;
 
@@ -41,23 +41,23 @@ public:
   // Hiển thị frame lên màn hình
   void present();
 
-  // Vẽ board (các ô đã bị lock)
+  // Ve bang choi (cac o da khoa)
   void drawBoard(const Board &board);
 
   // Vẽ mảnh đang rơi
   void drawTetromino(const Tetromino &tetromino);
 
-  // Vẽ ghost piece (bóng mờ)
+  // Ve bong mo ha canh
   void drawGhostPiece(const Tetromino &tetromino, int ghostY);
 
   // Vẽ mảnh tiếp theo ở panel bên phải
   void drawNextPiece(const Tetromino &nextPiece);
 
-  // Hàm vẽ UI (điểm số, level)
-  // Vẽ toàn bộ UI: score, level, lines
+  // Ve thong tin giao dien
+  // Hien thi: diem, cap do, so dong
   void drawUI(int score, int level, int lines);
 
-  // Vẽ màn hình theo state hiện tại
+  // Ve man hinh theo trang thai hien tai
   void drawScreen(GameState state, int currentScore = 0, int currentLevel = 0, int currentLines = 0);
   /*Nhận vào GameState — tự biết vẽ màn hình nào
   MENU → vẽ main menu

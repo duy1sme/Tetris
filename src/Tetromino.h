@@ -1,62 +1,47 @@
-// File này mô tả 7 mảnh Tetris và cách chúng di chuyển.
 #ifndef TETROMINO_H
 #define TETROMINO_H
 
 #include "GameState.h"
 
-constexpr int TETROMINO_SIZE = 4; // ma trận 4x4
-constexpr int NUM_ROTATIONS = 4; // mỗi mảnh có 4 trạng thái xoay 
+constexpr int TETROMINO_SIZE = 4; // Ma tran 4x4 cho moi trang thai.
+constexpr int NUM_ROTATIONS = 4;  // 0/90/180/270 do.
 
-// class Tetromino
-class Tetromino
-{
+class Tetromino {
 private:
     TetrominoType type;
-    int rotation; // 0, 1, 2, 3
+    int rotation; // [0..3]
 
+    // Ma tran hinh dang theo [xoay][hang][cot].
     bool shape[NUM_ROTATIONS][TETROMINO_SIZE][TETROMINO_SIZE];
-    /*Chiều 1 — 4 trạng thái xoay (0°, 90°, 180°, 270°)
-    Chiều 2, 3 — ma trận 4×4 mô tả hình dạng
-    true = ô có khối, false = ô trống*/
+
 public:
     Tetromino(TetrominoType type);
 
-    int x,y; // Vị trí hiện tại trên board (cột, hàng)
-    // Lấy loại mảnh - Board và Renderer cần để biết màu
+    // Vi tri hien tai tren bang.
+    int x, y;
+
+    // Thong tin manh.
     TetrominoType getType() const;
-
-    // Lấy trạng thái xoay hiện tại
     int getRotation() const;
-
-    // Kiểm tra ô (col, row) trong ma trận hiện tại có khối không
     bool isCellFilled(int col, int row) const;
 
-    // HÀM DI CHUYỂN & XOAY
-    // Di chuyển - chỉ thay đổi x, y
+    // Di chuyen va xoay.
     void moveLeft();
     void moveRight();
     void moveDown();
+    void moveUp(); // Dung de hoan tac buoc roi khong hop le.
+    void rotateCW();
+    void rotateCCW();
 
-    // Xoay - thay đổi rotation (0->1->2->3->0)
-    void rotateCW(); // clockwise (theo chiều kim đồng hồ)
-    void rotateCCW(); // counter-clockwise (ngược chiều kim đồng hồ)
-
-    // Lấy vị trí ghost piece (bóng mờ phía dưới)
+    // Hang du kien khi manh roi cham day (de ve bong mo).
     int getGhostY(const class Board& board) const;
 
-    /*rotateCW() và rotateCCW() — người chơi thường dùng 2 phím xoay khác nhau. 
-    getGhostY() trả về tọa độ Y thấp nhất mảnh có thể rơi tới — TV2 dùng để vẽ bóng.*/
-
-    // Tạo mảnh ngẫu nhiên theo bag randomizer
+    // Bo sinh ngau nhien 7-bag.
     static Tetromino createRandom();
-    /*static nghĩa là gọi không cần object: Tetromino::createRandom(). 
-    TV1 sẽ implement thuật toán bag randomizer — đảm bảo 7 mảnh xuất hiện đều nhau.*/
 
     int getColorID() const;
     int getBlockX(int index) const;
     int getBlockY(int index) const;
-
-    void moveUp();  // cần để undo moveDown khi va chạm
 };
 
 #endif

@@ -2,49 +2,54 @@
 #define AUDIOMANAGER_H
 
 #include <SDL3/SDL.h>
+#include <SDL3_mixer/SDL_mixer.h>
 #include "GameState.h"
 
 class AudioManager {
-    private:
-        bool initialized;
-        /*initialized — lưu trạng thái khởi tạo, nếu SDL audio init thất bại thì các hàm khác biết mà bỏ qua, không crash
-         TV4 sẽ thêm các con trỏ sound buffer vào private sau*/
-        bool bgmEnabled;   // ← thêm dòng này
-        bool sfxEnabled;   // ← thêm dòng này
-    public:
-        AudioManager();
-        ~AudioManager();
+private:
+    bool initialized;
+    bool bgmEnabled;
+    bool sfxEnabled;
 
-        // Hàm khởi tạo & dọn dẹp
-        // Khởi tạo SDL audio, load toàn bộ file âm thanh
-        bool init();
+    MIX_Mixer* mixer;
+    MIX_Track* bgmTrack; // Kenh BGM duoc dung xuyen suot.
+    MIX_Track* sfxTrack; // Kenh SFX dung chung.
 
-        // Giải phóng tất cả âm thanh
-        void shutdown();
+    MIX_Audio* bgm;
+    MIX_Audio* moveSfx;
 
-        // Hàm nhạc nền BGM
-        void playBGM();
-        void stopBGM();
-        void pauseBGM();
-        void resumeBGM();
+public:
+    AudioManager();
+    ~AudioManager();
 
-        // Điều chỉnh âm lượng nhạc nền (0-128)
-        void setBGMVolume(int volume);
+    // Vong doi AudioManager.
+    bool init();
+    void shutdown();
 
-        // Hàm hiệu ứng âm thanh SFX
-        // Phát 1 hiệu ứng âm thanh
-        void playSFX(SoundType sound);
+    // Dieu khien BGM.
+    void playBGM();
+    void stopBGM();
+    void pauseBGM();
+    void resumeBGM();
+    void setBGMVolume(float volume); // [0.0..1.0]
 
-        // Điều chỉnh âm lượng SFX (0-128)
-        void setSFXVolume(int volume);
+    // Dieu khien SFX.
+    void playSFX(SoundType sound);
+    void setSFXVolume(float volume);
 
-        // Hàm toggle (dùng cho Settings)
-        void toggleBGM();
-        void toggleSFX();
+    // Cai dat bat/tat.
+    void toggleBGM();
+    void toggleSFX();
+    bool isBGMEnabled() const;
+    bool isSFXEnabled() const;
+    void setBGMEnabled(bool enabled);
+    void setSFXEnabled(bool enabled);
 
-        bool isBGMEnabled() const;
-        bool isSFXEnabled() const;
+    // Xu ly event de phat am click trong giao dien.
+    void handleEvent(const SDL_Event& e);
 
+    // Ham ho tro debug.
+    void printSettings();
 };
 
 #endif

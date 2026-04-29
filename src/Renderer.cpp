@@ -7,48 +7,46 @@
 #include <iostream>
 #include <string>
 
-// Constructor: Khởi tạo renderer và tải các tài nguyên cần thiết (Texture,
-// Font)
+// Tai texture va font dung cho cac man hinh.
 Renderer::Renderer(SDL_Renderer *renderer)
     : sdlRenderer(renderer), mainMenuTexture(nullptr),
       gameScreenTexture(nullptr), highScoreTexture(nullptr),
       blockTexture(nullptr), font(nullptr), highscoresLoaded(false) {
 
-  // Khởi tạo thư viện SDL3_ttf nếu chưa được khởi tạo trước đó
+  // TTF co the dung chung, chi khoi tao khi can.
   if (!TTF_WasInit()) {
     if (!TTF_Init()) {
       std::cerr << "TTF_Init failed: " << SDL_GetError() << std::endl;
     }
   }
 
-  mainMenuTexture = IMG_LoadTexture(sdlRenderer, "assets/main_menu.png");
+  mainMenuTexture = IMG_LoadTexture(sdlRenderer, "assets/images/main_menu.png");
   if (!mainMenuTexture) {
     std::cerr << "Failed to load main_menu.png: " << SDL_GetError()
               << std::endl;
   }
 
-  gameScreenTexture = IMG_LoadTexture(sdlRenderer, "assets/gamescreen.png");
+  gameScreenTexture = IMG_LoadTexture(sdlRenderer, "assets/images/gamescreen.png");
   if (!gameScreenTexture) {
     std::cerr << "Failed to load gamescreen.png: " << SDL_GetError()
               << std::endl;
   }
 
-  highScoreTexture = IMG_LoadTexture(sdlRenderer, "assets/highscore.png");
+  highScoreTexture = IMG_LoadTexture(sdlRenderer, "assets/images/highscore.png");
   if (!highScoreTexture) {
     std::cerr << "Failed to load highscore.png: " << SDL_GetError()
               << std::endl;
   }
 
-  // Tải hình ảnh của một khối block cơ bản (thường là ảnh grayscale để dễ phủ
-  // màu)
-  blockTexture = IMG_LoadTexture(sdlRenderer, "assets/block_green.png");
+  // Texture block goc se duoc doi mau luc ve.
+  blockTexture = IMG_LoadTexture(sdlRenderer, "assets/images/block_green.png");
   if (!blockTexture) {
     std::cerr << "Failed to load block_green.png: " << SDL_GetError()
               << std::endl;
   }
 
-  // Tải font chữ với kích thước 24pt bằng SDL3_ttf
-  font = TTF_OpenFont("assets/font.ttf", 24);
+  // Font cho giao dien.
+  font = TTF_OpenFont("assets/images/font.ttf", 24);
   if (!font) {
     std::cerr << "Failed to load font.ttf: " << SDL_GetError() << std::endl;
   }
@@ -76,56 +74,44 @@ void Renderer::clear() {
 
 void Renderer::present() { SDL_RenderPresent(sdlRenderer); }
 
-// Hàm tiện ích: Trả về màu sắc (RGBA) tương ứng với từng loại mảnh Tetromino
+// Bang mau theo tung loai tetromino.
 SDL_Color Renderer::getTetrominoColor(TetrominoType type) {
   switch (type) {
   case TetrominoType::I:
-    return {0, 255, 255, 255}; // Cyan (Xanh lơ)
+    return {0, 255, 255, 255}; // Xanh lo
   case TetrominoType::O:
-    return {255, 255, 0, 255}; // Yellow (Vàng)
+    return {255, 255, 0, 255}; // Vang
   case TetrominoType::T:
-    return {128, 0, 128, 255}; // Purple (Tím)
+    return {128, 0, 128, 255}; // Tim
   case TetrominoType::S:
-    return {0, 255, 0, 255}; // Green (Xanh lá)
+    return {0, 255, 0, 255}; // Xanh la
   case TetrominoType::Z:
     return {255, 0, 0, 255}; // Red (Đỏ)
   case TetrominoType::J:
-    return {0, 0, 255, 255}; // Blue (Xanh dương)
+    return {0, 0, 255, 255}; // Xanh duong
   case TetrominoType::L:
-    return {255, 165, 0, 255}; // Orange (Cam)
+    return {255, 165, 0, 255}; // Cam
   default:
-    return {255, 255, 255, 255}; // White (Trắng) dành cho các ô trống hoặc lỗi
+    return {255, 255, 255, 255}; // Trang cho o trong hoac loi
   }
 }
 
-// Vẽ toàn bộ bảng chơi, bao gồm hình nền, viền và các khối đã bị khóa (locked)
+// Ve nen game va cac o da khoa tren bang choi.
 void Renderer::drawBoard(const Board &board) {
-  // 1. Vẽ background phủ toàn màn hình nếu đã load thành công
   if (gameScreenTexture) {
     SDL_FRect dest = {0, 0, (float)WINDOW_WIDTH, (float)WINDOW_HEIGHT};
     SDL_RenderTexture(sdlRenderer, gameScreenTexture, nullptr, &dest);
   }
 
-  // 2. Vẽ viền bảng chơi (board) màu trắng (Đã xóa vì ảnh nền đã có viền)
-  // SDL_SetRenderDrawColor(sdlRenderer, 255, 255, 255, 255);
-  // SDL_FRect boardRect = {(float)BOARD_OFFSET_X, (float)BOARD_OFFSET_Y,
-  //                        (float)(BOARD_WIDTH * CELL_SIZE),
-  //                        (float)(BOARD_HEIGHT * CELL_SIZE)};
-  // SDL_RenderRect(sdlRenderer, &boardRect);
-
-  // 3. Duyệt qua từng ô trên bảng chơi để vẽ các khối đã nằm cố định
   for (int r = 0; r < BOARD_HEIGHT; ++r) {
     for (int c = 0; c < BOARD_WIDTH; ++c) {
       TetrominoType type = board.getCellType(c, r);
       if (type != TetrominoType::NONE) {
-        // Tính toán tọa độ pixel trên màn hình
         SDL_FRect rect = {(float)(BOARD_OFFSET_X + c * CELL_SIZE),
                           (float)(BOARD_OFFSET_Y + r * CELL_SIZE),
                           (float)CELL_SIZE, (float)CELL_SIZE};
 
         if (blockTexture) {
-          // Nếu có ảnh blockTexture, ta sẽ áp dụng bộ lọc màu (Color Mod)
-          // để nhuộm màu ảnh theo loại mảnh tương ứng
           SDL_Color color = getTetrominoColor(type);
           SDL_SetTextureColorMod(blockTexture, color.r, color.g, color.b);
           SDL_RenderTexture(sdlRenderer, blockTexture, nullptr, &rect);
@@ -135,7 +121,6 @@ void Renderer::drawBoard(const Board &board) {
           SDL_RenderFillRect(sdlRenderer, &rect);
         }
 
-        // Vẽ lưới cho ô
         SDL_SetRenderDrawColor(sdlRenderer, 50, 50, 50, 255);
         SDL_RenderRect(sdlRenderer, &rect);
       }
@@ -143,22 +128,19 @@ void Renderer::drawBoard(const Board &board) {
   }
 }
 
-// Vẽ mảnh đang rơi (mảnh mà người chơi đang điều khiển)
+// Ve manh dang duoc dieu khien.
 void Renderer::drawTetromino(const Tetromino &tetromino) {
   TetrominoType type = tetromino.getType();
   if (type == TetrominoType::NONE)
     return;
 
-  // Duyệt qua ma trận 4x4 của mảnh
   for (int r = 0; r < 4; ++r) {
     for (int c = 0; c < 4; ++c) {
       if (tetromino.isCellFilled(c, r)) {
-        // Tính toán vị trí thực tế trên màn hình dựa vào tọa độ x, y của mảnh
         int screenX = BOARD_OFFSET_X + (tetromino.x + c) * CELL_SIZE;
         int screenY = BOARD_OFFSET_Y + (tetromino.y + r) * CELL_SIZE;
 
-        // Chỉ vẽ nếu khối nằm bên trong hoặc phía dưới mép trên của bảng chơi
-        // (tránh vẽ lấn ra ngoài)
+        // Khong ve cac o nam tren vung hien thi cua bang choi.
         if (screenY >= BOARD_OFFSET_Y) {
           SDL_FRect rect = {(float)screenX, (float)screenY, (float)CELL_SIZE,
                             (float)CELL_SIZE};
@@ -181,18 +163,15 @@ void Renderer::drawTetromino(const Tetromino &tetromino) {
   }
 }
 
-// Vẽ bóng mờ (Ghost Piece) hiển thị vị trí rơi dự kiến của mảnh hiện tại
+// Ve bong mo tai vi tri ha canh du kien.
 void Renderer::drawGhostPiece(const Tetromino &tetromino, int ghostY) {
   TetrominoType type = tetromino.getType();
   if (type == TetrominoType::NONE)
     return;
 
-  // Tương tự như mảnh đang rơi, duyệt ma trận 4x4
   for (int r = 0; r < 4; ++r) {
     for (int c = 0; c < 4; ++c) {
       if (tetromino.isCellFilled(c, r)) {
-        // Dùng tọa độ ghostY (vị trí thấp nhất có thể rơi) thay vì tọa độ y
-        // hiện tại
         int screenX = BOARD_OFFSET_X + (tetromino.x + c) * CELL_SIZE;
         int screenY = BOARD_OFFSET_Y + (ghostY + r) * CELL_SIZE;
 
@@ -204,10 +183,9 @@ void Renderer::drawGhostPiece(const Tetromino &tetromino, int ghostY) {
             SDL_Color color = getTetrominoColor(type);
             SDL_SetTextureColorMod(blockTexture, color.r, color.g, color.b);
 
-            // Chỉnh Alpha = 100 để ảnh mờ đi (tạo hiệu ứng bóng mờ)
             SDL_SetTextureAlphaMod(blockTexture, 100);
             SDL_RenderTexture(sdlRenderer, blockTexture, nullptr, &rect);
-            // Khôi phục Alpha về 255 (hoàn toàn đục) cho các lần vẽ sau
+            // Khoi phuc do trong suot cho cac lan ve tiep theo.
             SDL_SetTextureAlphaMod(blockTexture, 255);
           } else {
             SDL_Color color = getTetrominoColor(type);
@@ -294,7 +272,7 @@ void Renderer::renderTextCentered(const char *text, int cx, int cy,
 }
 
 void Renderer::drawUI(int score, int level, int lines) {
-  int panelX = 177; // Center of the left boxes
+  int panelX = 177; // Tam cac o thong tin ben trai
 
   char buffer[64];
 
@@ -375,12 +353,12 @@ void Renderer::drawScreen(GameState state, int currentScore, int currentLevel,
       for (size_t i = 0; i < highscores.size(); ++i) {
         SDL_Color color = {255, 255, 255, 255};
         if (!highlighted && highscores[i] == currentScore) {
-          color = {255, 255, 0, 255}; // Highlight yellow
+          color = {255, 255, 0, 255}; // To mau vang cho diem vua dat
           highlighted = true;
         }
         std::string scoreStr = std::to_string(highscores[i]);
         // Box starts at 88, but top margin is ~12px. Rows start at ~100.
-        // Row height is ~35px. First row center Y = 100 + 35/2 = 117.5
+        // Chieu cao moi dong xap xi 35px, canh theo tam tung dong.
         renderTextCentered(scoreStr.c_str(), popupX + 210,
                            popupY + 134 + i * 29, color);
       }
@@ -412,5 +390,5 @@ void Renderer::drawLineClearEffect(const Board &board, int clearedRows[],
 
   SDL_SetRenderDrawBlendMode(sdlRenderer, SDL_BLENDMODE_NONE);
   SDL_RenderPresent(sdlRenderer);
-  SDL_Delay(50); // Delay nhẹ để có thể thấy hiệu ứng nhấp nháy
+  SDL_Delay(50); // Tre nhe de nhin ro hieu ung nhap nhay
 }
