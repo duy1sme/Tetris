@@ -37,6 +37,7 @@ constexpr int WINDOW_HEIGHT = 727;
 // ============================================================
 enum class GameState {
     MENU,      // Màn hình chính (chờ người chơi bắt đầu)
+    TUTORIAL, // Màn hình hướng dẫn thao tác
     PLAYING,   // Đang chơi (vòng lặp cập nhật đầy đủ)
     PAUSED,    // Tạm dừng (ESC), không cập nhật logic
     SETTINGS,  // Màn hình cài đặt (chưa triển khai đầy đủ)

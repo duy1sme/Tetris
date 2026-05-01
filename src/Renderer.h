@@ -43,6 +43,7 @@ private:
     SDL_Texture*  mainMenuTexture;   // Nền màn hình chính.
     SDL_Texture*  gameScreenTexture; // Nền bảng chơi.
     SDL_Texture*  highScoreTexture;  // Popup game over.
+    SDL_Texture*  tutorialTexture;   // Ảnh hướng dẫn.
     SDL_Texture*  blockTexture;      // Sprite ô vuông (tô màu lúc vẽ).
     TTF_Font*     font;              // Font chữ cho số điểm, level, v.v.
 
@@ -85,6 +86,9 @@ public:
 
     // Vẽ mảnh tiếp theo ở panel bên phải bảng chơi.
     void drawNextPiece(const Tetromino& nextPiece);
+
+    // Vẽ mảnh đang giữ ở panel bên trái bảng chơi.
+    void drawHeldPiece(const Tetromino& heldPiece);
 
     // Vẽ thông tin UI: điểm, cấp độ, số hàng đã xóa.
     void drawUI(int score, int level, int lines);

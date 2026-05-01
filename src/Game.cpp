@@ -33,7 +33,7 @@
 // Các subsystem thực sự được khởi tạo trong init().
 Game::Game()
     : window(nullptr), sdlRenderer(nullptr), state(GameState::MENU),
-      running(false), currentPiece(nullptr), nextPiece(nullptr),
+      running(false), currentPiece(nullptr), nextPiece(nullptr), heldPiece(nullptr), canHold(true),
       renderer(nullptr), score(0), level(1), totalLines(0),
       fallTimer(0.0f), fallInterval(1.0f) {}
 
@@ -135,6 +135,7 @@ void Game::shutdown() {
     // Hủy heap objects theo thứ tự phụ thuộc.
     delete currentPiece; currentPiece = nullptr;
     delete nextPiece;    nextPiece    = nullptr;
+    delete heldPiece;    heldPiece    = nullptr;
     delete renderer;     renderer     = nullptr;
 
     // Tắt âm thanh.
@@ -168,12 +169,24 @@ void Game::handleInput() {
             const float mouseX = event.button.x;  
             const float mouseY = event.button.y;
 
-            // Nhấn "Play" trên menu → bắt đầu ván mới.
+            // Nhấn "Play" trên menu → sang tutorial.
             if (state == GameState::MENU && isMouseInRect(mouseX, mouseY, btnPlay)) {
+                changeState(GameState::TUTORIAL);
+            }
+            // Nhấn click bất kỳ ở tutorial → bắt đầu ván mới.
+            else if (state == GameState::TUTORIAL) {
                 board.reset();
-                score = 0; level = 1; totalLines = 0; fallInterval = 1.0f;
-                delete currentPiece; currentPiece = nullptr;
-                delete nextPiece;    nextPiece    = nullptr;
+                score = 0;
+                level = 1;
+                totalLines = 0;
+                fallInterval = 1.0f;
+                delete currentPiece;
+                currentPiece = nullptr;
+                delete nextPiece;
+                nextPiece = nullptr;
+                delete heldPiece;
+                heldPiece = nullptr;
+                canHold = true;
                 spawnPiece();
                 changeState(GameState::PLAYING);
             }
@@ -186,22 +199,30 @@ void Game::handleInput() {
                 // Nút xoay (chơi lại) — bên phải popup.
                 SDL_FRect btnRestart = {popupX + 174.0f, popupY + 308.0f, 72.0f, 72.0f};
                 // Nút home (về menu) — bên trái popup.
-                SDL_FRect btnHome    = {popupX + 92.0f,  popupY + 308.0f, 72.0f, 72.0f};
+                SDL_FRect btnHome = {popupX + 92.0f, popupY + 308.0f, 72.0f, 72.0f};
 
                 if (isMouseInRect(mouseX, mouseY, btnRestart)) {
-                    // Chơi lại từ đầu.
-                    board.reset();
-                    score = 0; level = 1; totalLines = 0; fallInterval = 1.0f;
-                    delete currentPiece; currentPiece = nullptr;
-                    delete nextPiece;    nextPiece    = nullptr;
-                    spawnPiece();
-                    changeState(GameState::PLAYING);
+                // Chơi lại từ đầu.
+                board.reset();
+                score = 0;
+                level = 1;
+                totalLines = 0;
+                fallInterval = 1.0f;
+                delete currentPiece;
+                currentPiece = nullptr;
+                delete nextPiece;
+                nextPiece = nullptr;
+                delete heldPiece;
+                heldPiece = nullptr;
+                canHold = true;
+                spawnPiece();
+                changeState(GameState::PLAYING);
                 } else if (isMouseInRect(mouseX, mouseY, btnHome)) {
-                    // Về menu chính.
-                    changeState(GameState::MENU);
+                // Về menu chính.
+                changeState(GameState::MENU);
                 }
             }
-        }
+            }
 
         // ── Phím bàn phím ─────────────────────────────────────────────
         else if (event.type == SDL_EVENT_KEY_DOWN) {
@@ -220,6 +241,8 @@ void Game::handleInput() {
                 score = 0; level = 1; totalLines = 0; fallInterval = 1.0f;
                 delete currentPiece; currentPiece = nullptr;
                 delete nextPiece;    nextPiece    = nullptr;
+                delete heldPiece;    heldPiece    = nullptr;
+                canHold = true;
                 spawnPiece();
                 changeState(GameState::PLAYING);
             }
@@ -261,7 +284,6 @@ void Game::handleInput() {
                 break;
 
             case SDLK_UP:
-            case SDLK_X:
                 // Xoay thuận chiều kim đồng hồ; hoàn tác nếu va chạm.
                 currentPiece->rotateCW();
                 if (!isValidPosition(*currentPiece)) currentPiece->rotateCCW();
@@ -273,6 +295,10 @@ void Game::handleInput() {
                 currentPiece->rotateCCW();
                 if (!isValidPosition(*currentPiece)) currentPiece->rotateCW();
                 else audio.playSFX(SoundType::ROTATE);
+                break;
+
+            case SDLK_C:
+                holdPiece();
                 break;
 
             case SDLK_SPACE:
@@ -351,6 +377,7 @@ void Game::render() {
         }
 
         if (nextPiece) renderer->drawNextPiece(*nextPiece);
+        if (heldPiece) renderer->drawHeldPiece(*heldPiece);
         renderer->drawUI(score, level, totalLines);
     }
 
@@ -372,6 +399,8 @@ void Game::spawnPiece() {
         nextPiece = new Tetromino(Tetromino::createRandom());
     }
 
+    canHold = true;
+
     // currentPiece ← nextPiece cũ.
     delete currentPiece;
     currentPiece = nextPiece;
@@ -382,6 +411,37 @@ void Game::spawnPiece() {
     if (!isValidPosition(*currentPiece)) {
         changeState(GameState::GAME_OVER);
     }
+}
+
+// ============================================================
+// holdPiece() — Giữ mảnh hiện tại (C)
+// ============================================================
+
+void Game::holdPiece() {
+    if (!canHold || !currentPiece) return;
+
+    if (heldPiece == nullptr) {
+        heldPiece = new Tetromino(currentPiece->getType());
+        delete currentPiece;
+        currentPiece = nullptr;
+        spawnPiece();
+    } else {
+        TetrominoType currentType = currentPiece->getType();
+        TetrominoType heldType = heldPiece->getType();
+        
+        delete currentPiece;
+        currentPiece = new Tetromino(heldType);
+        
+        delete heldPiece;
+        heldPiece = new Tetromino(currentType);
+
+        if (!isValidPosition(*currentPiece)) {
+            changeState(GameState::GAME_OVER);
+        }
+    }
+
+    canHold = false;
+    audio.playSFX(SoundType::MOVE); // Dùng âm thanh move tạm cho hold
 }
 
 // ============================================================

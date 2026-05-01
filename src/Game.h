@@ -52,6 +52,8 @@ private:
     Board         board;         // Lưới ô đã khóa.
     Tetromino*    currentPiece;  // Mảnh đang rơi (heap, Game sở hữu).
     Tetromino*    nextPiece;     // Mảnh tiếp theo (heap, Game sở hữu).
+    Tetromino*    heldPiece;     // Mảnh đang được giữ.
+    bool          canHold;       // Cho phép giữ mảnh trong lượt này không.
     Renderer*     renderer;      // Renderer đồ họa (heap, Game sở hữu).
     AudioManager  audio;         // Hệ thống âm thanh (stack).
 
@@ -67,6 +69,7 @@ private:
     void calculateScore(int linesCleared); // Tính điểm và tăng cấp độ.
     void changeState(GameState newState);  // Chuyển trạng thái + xử lý audio.
     void hardDrop();             // Thả mảnh thẳng xuống (SPACE).
+    void holdPiece();            // Giữ mảnh hiện tại (C).
 
     // ── Dữ liệu tiến trình ────────────────────────────────────────────
     int score;      // Điểm tích lũy của ván hiện tại.
@@ -80,9 +83,7 @@ private:
 
     // ── Vùng nhấn của các nút giao diện ──────────────────────────────
     // Tọa độ pixel trên cửa sổ; dùng để phát hiện click chuột vào nút.
-    SDL_FRect btnPlay     = {370, 305, 230, 55}; // Nút "Chơi" trên menu.
-    SDL_FRect btnSettings = {350, 650, 60,  60}; // Nút cài đặt (chưa dùng).
-    SDL_FRect btnHelp     = {435, 650, 60,  60}; // Nút trợ giúp (chưa dùng).
+SDL_FRect btnPlay     = {370, 250, 230, 55}; // Nút "Chơi" trên menu.    
 
     // Trả về true nếu (mouseX, mouseY) nằm trong vùng rect.
     bool isMouseInRect(float mouseX, float mouseY, SDL_FRect rect);
