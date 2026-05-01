@@ -480,8 +480,4 @@ void Renderer::drawLineClearEffect(const Board& board,
     }
 
     SDL_SetRenderDrawBlendMode(sdlRenderer, SDL_BLENDMODE_NONE);
-    SDL_RenderPresent(sdlRenderer);
-
-    // Delay 50ms để hiệu ứng nháy sáng có thể nhìn thấy.
-    SDL_Delay(50);
 }

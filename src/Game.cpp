@@ -49,8 +49,10 @@ Game::~Game() {
 // ============================================================
 
 bool Game::init() {
-    // SDL_Init trả về 0 khi thành công, <0 khi lỗi.
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
+    // Chỉ init VIDEO ở đây.
+    // SDL_INIT_AUDIO được MIX_CreateMixerDevice() trong AudioManager::init()
+    // tự xử lý nội bộ theo đúng API SDL3_mixer 3.2.
+    if (!SDL_Init(SDL_INIT_VIDEO)) {     
         std::cerr << "SDL Init failed: " << SDL_GetError() << std::endl;
         return false;
     }
@@ -163,8 +165,8 @@ void Game::handleInput() {
         // ── Click chuột trái ─────────────────────────────────────────
         else if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN &&
                  event.button.button == SDL_BUTTON_LEFT) {
-            const int mouseX = event.button.x;
-            const int mouseY = event.button.y;
+            const float mouseX = event.button.x;  
+            const float mouseY = event.button.y;
 
             // Nhấn "Play" trên menu → bắt đầu ván mới.
             if (state == GameState::MENU && isMouseInRect(mouseX, mouseY, btnPlay)) {
@@ -486,7 +488,7 @@ void Game::changeState(GameState newState) {
 // isMouseInRect() — Kiểm tra click trong vùng hình chữ nhật
 // ============================================================
 
-bool Game::isMouseInRect(int mouseX, int mouseY, SDL_FRect rect) {
+bool Game::isMouseInRect(float mouseX, float mouseY, SDL_FRect rect) {
     return mouseX >= rect.x && mouseX <= rect.x + rect.w &&
            mouseY >= rect.y && mouseY <= rect.y + rect.h;
 }

@@ -85,7 +85,7 @@ private:
     SDL_FRect btnHelp     = {435, 650, 60,  60}; // Nút trợ giúp (chưa dùng).
 
     // Trả về true nếu (mouseX, mouseY) nằm trong vùng rect.
-    bool isMouseInRect(int mouseX, int mouseY, SDL_FRect rect);
+    bool isMouseInRect(float mouseX, float mouseY, SDL_FRect rect);
 
 public:
     Game();
